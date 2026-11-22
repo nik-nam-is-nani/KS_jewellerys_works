@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Add designs – K S Jewellers</title>
+<link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#EDF2EE;--ink:#0E2F2B;--mute:#4D6862;--card:#fff;--line:#CBD9D2;--gold:#B98A2E;--rose:#8E1F3F;--ok:#128C4A;
+--serif:'Marcellus',Georgia,serif;--sans:'Figtree',system-ui,sans-serif;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root{--bg:#0A1C1A;--ink:#EFE6CF;--mute:#9DB3AC;--card:#12302C;--line:#24453F;--gold:#D9AE55;color-scheme:dark}}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--ink);font:400 17px/1.5 var(--sans)}
+main{max-width:560px;margin:0 auto;padding:18px 16px 60px}
+h1{font:400 28px var(--serif);margin:6px 0 2px}h2{font:400 22px var(--serif);margin:0 0 10px}
+p.s{margin:0 0 16px;color:var(--mute);font-size:15px}
+section{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:18px;margin:16px 0}
+label{display:block;font-weight:600;margin:14px 0 6px}label small{font-weight:400;color:var(--mute)}
+input,select{width:100%;font:inherit;padding:13px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink)}
+button{font:inherit;cursor:pointer}
+.row{display:flex;flex-wrap:wrap;gap:8px}
+.opt{border:1px solid var(--line);background:var(--bg);color:var(--ink);border-radius:999px;padding:11px 18px;font-weight:500}
+.opt[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.big{width:100%;margin-top:20px;padding:16px;border:0;border-radius:14px;background:var(--ok);color:#fff;font-weight:600;font-size:18px}
+.big:disabled{opacity:.6}
+.pick{display:grid;place-items:center;text-align:center;min-height:170px;border:2px dashed var(--gold);border-radius:14px;cursor:pointer;overflow:hidden;color:var(--mute)}
+.pick img{width:100%;max-height:320px;object-fit:contain}
+#file{display:none}
+.msg{margin:12px 0 0;font-weight:600}.msg.err{color:var(--rose)}.msg.ok{color:var(--ok)}
+.item{display:flex;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--line)}
+.item img{width:64px;height:64px;object-fit:cover;border-radius:10px;flex:none}
+.item div{flex:1;min-width:0}.item b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.item span{font-size:14px;color:var(--mute)}
+.sm{border:1px solid var(--line);background:none;color:var(--ink);border-radius:10px;padding:8px 12px;font-size:14px}
+.sm.del{color:var(--rose);border-color:var(--rose)}
+.top{display:flex;justify-content:space-between;align-items:center}
+[hidden]{display:none!important}
+</style>
+</head>
+<body><main>
+<div class="top"><h1>K S Jewellers</h1><button class="sm" id="out" hidden>Log out</button></div>
+
+<section id="login"><h2>Log in</h2><p class="s">Only for the shop family.</p>
+<label for="em">Email</label><input id="em" type="email" autocomplete="username" inputmode="email">
+<label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password">
+<button class="big" id="go">Log in</button><p class="msg err" id="lerr"></p></section>
+
+<div id="app" hidden>
+<section><h2>Today’s rate</h2><p class="s">Fill once in the morning. Leave a box empty to hide it.</p>
+<label for="g22">22K gold (₹ per gram)</label><input id="g22" inputmode="decimal">
+<label for="g24">24K gold (₹ per gram)</label><input id="g24" inputmode="decimal">
+<label for="sil">Silver (₹ per gram)</label><input id="sil" inputmode="decimal">
+<button class="big" id="saveRate">Save rate</button><p class="msg" id="rmsg"></p></section>
+
+<section><h2>Add a design</h2>
+<label>1. Photo</label>
+<label class="pick" for="file" id="pick">Tap to take or choose a photo</label>
+<input id="file" type="file" accept="image/*">
+<label>2. Gold or silver</label><div class="row" id="metal"></div>
+<label>3. Category</label><div class="row" id="cat"></div>
+<label for="nm">4. Name</label><input id="nm" placeholder="Example: Peacock jhumka">
+<label for="pu">Purity</label><input id="pu">
+<label for="ew">Estimated weight <small>(optional)</small></label><input id="ew" placeholder="Example: 9 g">
+<label for="ln">Length or size <small>(optional)</small></label><input id="ln" placeholder="Example: 18 inch">
+<label for="nt">Extra details <small>(optional)</small></label><input id="nt" placeholder="Example: Antique finish, 2 line">
+<button class="big" id="pub">Publish to website</button><p class="msg" id="pmsg"></p></section>
+
+<section><h2>Recent designs</h2><div id="list"></div></section>
+</div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.57.4/dist/umd/supabase.js"></script>
+<script>
+const SUPABASE_URL="https://blynyqjbefmwsutpiojh.supabase.co";
+const SUPABASE_KEY="sb_publishable_JO2kgG2p5woNHT0d4UaAVQ_ExSIokjX";
+const CATS=["Necklaces","Chains","Earrings","Jhumkas","Rings","Bangles","Bracelets","Pendants","Pooja items","Others"];
+const PURITY={Gold:"91.6 KDM",Silver:"92.5 silver"};
+
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const sb=supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const img=p=>`${SUPABASE_URL}/storage/v1/object/public/designs/${p}`;
+const f={metal:"Gold",cat:"Necklaces",blob:null};
+
+function opts(el,vals,key,after){el.innerHTML=vals.map(v=>`<button type="button" class="opt" aria-pressed="${f[key]===v}" data-v="${v}">${v}</button>`).join("");
+ el.querySelectorAll("button").forEach(b=>b.onclick=()=>{f[key]=b.dataset.v;opts(el,vals,key,after);after&&after()})}
+function drawOpts(){opts($("#metal"),["Gold","Silver"],"metal",()=>{$("#pu").value=PURITY[f.metal]});opts($("#cat"),CATS,"cat")}
+
+async function show(){
+ const {data:{session}}=await sb.auth.getSession();
+ $("#login").hidden=!!session;$("#app").hidden=!session;$("#out").hidden=!session;
+ if(session){drawOpts();$("#pu").value=PURITY[f.metal];loadRate();loadList()}}
+$("#go").onclick=async()=>{$("#lerr").textContent="";
+ const {error}=await sb.auth.signInWithPassword({email:$("#em").value.trim(),password:$("#pw").value});
+ if(error)$("#lerr").textContent="Wrong email or password. Please try again.";else show()};
+$("#out").onclick=async()=>{await sb.auth.signOut();show()};
+
+async function loadRate(){const {data}=await sb.from("rates").select("*").eq("id",1).maybeSingle();
+ if(data){$("#g22").value=data.gold22||"";$("#g24").value=data.gold24||"";$("#sil").value=data.silver||""}}
+$("#saveRate").onclick=async()=>{const m=$("#rmsg");m.className="msg";m.textContent="Saving…";
+ const {error}=await sb.from("rates").update({gold22:$("#g22").value.trim()||null,gold24:$("#g24").value.trim()||null,silver:$("#sil").value.trim()||null,updated_at:new Date().toISOString()}).eq("id",1);
+ m.className="msg "+(error?"err":"ok");m.textContent=error?"Could not save. Check internet and try again.":"Saved. The website now shows today’s rate."};
+
+$("#file").onchange=async e=>{const file=e.target.files[0];if(!file)return;
+ $("#pick").textContent="Preparing photo…";
+ try{f.blob=await shrink(file);$("#pick").innerHTML=`<img src="${URL.createObjectURL(f.blob)}" alt="Selected photo">`}
+ catch(x){f.blob=null;$("#pick").textContent="This photo could not be read. Please choose another."}};
+async function shrink(file){
+ const bmp=await createImageBitmap(file);const s=Math.min(1,1600/Math.max(bmp.width,bmp.height));
+ const c=document.createElement("canvas");c.width=Math.round(bmp.width*s);c.height=Math.round(bmp.height*s);
+ c.getContext("2d").drawImage(bmp,0,0,c.width,c.height);
+ let b=await new Promise(r=>c.toBlob(r,"image/webp",.82));
+ if(!b||b.type!=="image/webp")b=await new Promise(r=>c.toBlob(r,"image/jpeg",.85));
+ return b}
+
+$("#pub").onclick=async()=>{const m=$("#pmsg"),btn=$("#pub");m.className="msg";
+ const name=$("#nm").value.trim();
+ if(!f.blob){m.className="msg err";m.textContent="Please add a photo first.";return}
+ if(!name){m.className="msg err";m.textContent="Please type the name of the design.";return}
+ btn.disabled=true;m.textContent="Uploading… please wait";
+ const ext=f.blob.type==="image/webp"?"webp":"jpg";
+ const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
+ const up=await sb.storage.from("designs").upload(path,f.blob,{contentType:f.blob.type,cacheControl:"31536000"});
+ if(up.error){m.className="msg err";m.textContent="Photo upload failed. Check internet and try again.";btn.disabled=false;return}
+ const row={name,metal:f.metal,category:f.cat,purity:$("#pu").value.trim()||null,est_weight:$("#ew").value.trim()||null,length:$("#ln").value.trim()||null,note:$("#nt").value.trim()||null,image_path:path};
+ let err=null;
+ for(let i=0;i<3;i++){row.code=f.metal[0]+f.cat[0]+String(Date.now()).slice(-6)+(i?i:"");
+  const r=await sb.from("designs").insert(row);err=r.error;if(!err||err.code!=="23505")break}
+ if(err){await sb.storage.from("designs").remove([path]);m.className="msg err";m.textContent="Could not publish. Please try again.";btn.disabled=false;return}
+ ["#nm","#ew","#ln","#nt"].forEach(s=>$(s).value="");f.blob=null;$("#file").value="";$("#pick").textContent="Tap to take or choose a photo";
+ m.className="msg ok";m.textContent="Published. It is now on the website.";btn.disabled=false;loadList()};
+
+async function loadList(){const {data}=await sb.from("designs").select("*").order("created_at",{ascending:false}).limit(30);
+ $("#list").innerHTML=(data||[]).map(d=>`<div class="item"><img src="${img(d.image_path)}" alt=""><div><b>${esc(d.name)}</b><span>${esc(d.code)} · ${esc(d.category)}${d.is_sold?" · Hidden":""}</span></div><button class="sm" data-s="${d.id}" data-v="${d.is_sold}">${d.is_sold?"Show":"Sold"}</button><button class="sm del" data-d="${d.id}" data-p="${esc(d.image_path)}">Delete</button></div>`).join("")||'<p class="s">No designs yet.</p>';
+ $("#list").querySelectorAll("[data-s]").forEach(b=>b.onclick=async()=>{await sb.from("designs").update({is_sold:b.dataset.v!=="true"}).eq("id",b.dataset.s);loadList()});
+ $("#list").querySelectorAll("[data-d]").forEach(b=>b.onclick=async()=>{if(!confirm("Delete this design permanently?"))return;await sb.from("designs").delete().eq("id",b.dataset.d);await sb.storage.from("designs").remove([b.dataset.p]);loadList()})}
+show();
+</script>
+</body>
+</html>
