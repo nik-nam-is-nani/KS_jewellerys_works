@@ -93,6 +93,7 @@ async function show(){
 $("#go").onclick=async()=>{$("#lerr").textContent="";
  const {error}=await sb.auth.signInWithPassword({email:$("#em").value.trim(),password:$("#pw").value});
  if(error)$("#lerr").textContent="Wrong email or password. Please try again.";else show()};
+[$("#em"),$("#pw")].forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter")$("#go").click()}));
 $("#out").onclick=async()=>{await sb.auth.signOut();show()};
 
 async function loadRate(){const {data}=await sb.from("rates").select("*").eq("id",1).maybeSingle();

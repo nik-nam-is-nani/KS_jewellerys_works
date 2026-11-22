@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>K S Jewellers & Works – Kurnool</title>
 <meta name="description" content="91.6 KDM hallmarked gold and silver jewellery designs from K S Jewellers & Works, Kurnool. New designs every day.">
+<meta property="og:title" content="K S Jewellers & Works – Kurnool">
+<meta property="og:description" content="91.6 KDM hallmarked gold and silver jewellery designs from K S Jewellers & Works, Kurnool. New designs every day.">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>✨</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Marcellus&family=Figtree:wght@400;500;600&display=swap" rel="stylesheet">
@@ -125,7 +129,7 @@ async function load(){
   $("#rateTxt").innerHTML=`<span>Today’s rate (${dt})</span>`+[["22K gold",r.gold22],["24K gold",r.gold24],["Silver",r.silver]].filter(x=>x[1]).map(x=>`<span>${esc(x[0])}: ₹${esc(x[1])}</span>`).join("");
   $("#rate").hidden=false}
  render();
- const c=decodeURIComponent(location.hash.slice(1));const f=rows.find(d=>d.code===c);if(f)openD(f)}
+ let c="";try{c=decodeURIComponent(location.hash.slice(1))}catch(e){}const f=rows.find(d=>d.code===c);if(f)openD(f)}
 
 function chips(el,vals,key){el.innerHTML=vals.map(v=>`<button class="chip" aria-pressed="${st[key]===v}" data-v="${esc(v)}">${esc(v)}</button>`).join("");
  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{st[key]=b.dataset.v;st.page=1;render()})}
