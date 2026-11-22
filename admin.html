@@ -122,12 +122,12 @@ $("#pub").onclick=async()=>{const m=$("#pmsg"),btn=$("#pub");m.className="msg";
  const ext=f.blob.type==="image/webp"?"webp":"jpg";
  const path=`${Date.now()}-${Math.random().toString(36).slice(2,8)}.${ext}`;
  const up=await sb.storage.from("designs").upload(path,f.blob,{contentType:f.blob.type,cacheControl:"31536000"});
- if(up.error){m.className="msg err";m.textContent="Photo upload failed. Check internet and try again.";btn.disabled=false;return}
+ if(up.error){console.error("Upload error:",up.error);m.className="msg err";m.textContent="Photo upload failed: "+(up.error.message||"Check internet and try again.");btn.disabled=false;return}
  const row={name,metal:f.metal,category:f.cat,purity:$("#pu").value.trim()||null,est_weight:$("#ew").value.trim()||null,length:$("#ln").value.trim()||null,note:$("#nt").value.trim()||null,image_path:path};
  let err=null;
  for(let i=0;i<3;i++){row.code=f.metal[0]+f.cat[0]+String(Date.now()).slice(-6)+(i?i:"");
   const r=await sb.from("designs").insert(row);err=r.error;if(!err||err.code!=="23505")break}
- if(err){await sb.storage.from("designs").remove([path]);m.className="msg err";m.textContent="Could not publish. Please try again.";btn.disabled=false;return}
+ if(err){console.error("Insert error:",err);await sb.storage.from("designs").remove([path]);m.className="msg err";m.textContent="Could not publish: "+(err.message||"Please try again.");btn.disabled=false;return}
  ["#nm","#ew","#ln","#nt"].forEach(s=>$(s).value="");f.blob=null;$("#file").value="";$("#pick").textContent="Tap to take or choose a photo";
  m.className="msg ok";m.textContent="Published. It is now on the website.";btn.disabled=false;loadList()};
 
