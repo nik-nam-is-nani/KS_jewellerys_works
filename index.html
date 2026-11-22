@@ -234,22 +234,51 @@ async function load(){
  render();
  let c="";try{c=decodeURIComponent(location.hash.slice(1))}catch(e){}const f=rows.find(d=>d.code===c);if(f)openD(f)}
 
+const ALL_CATS=["All","Necklaces","Chains","Earrings","Jhumkas","Rings","Bangles","Bracelets","Pendants","Pooja items","Others"];
+
+function getCat(d){
+ const c=(d.category||"").trim();
+ const n=(d.name||"").toLowerCase();
+ if(c==="Necklaces" || !c || c==="Others"){
+  if(/jhumka/i.test(n)) return "Jhumkas";
+  if(/earring/i.test(n)) return "Earrings";
+  if(/ring/i.test(n)) return "Rings";
+  if(/bangle/i.test(n)) return "Bangles";
+  if(/chain/i.test(n)) return "Chains";
+  if(/pendant/i.test(n)) return "Pendants";
+  if(/bracelet/i.test(n)) return "Bracelets";
+  if(/pooja/i.test(n)) return "Pooja items";
+ }
+ return c || "Others";
+}
+
+function matchCat(d, type){
+ if(type==="All") return true;
+ const c=getCat(d);
+ if(c.toLowerCase() === type.toLowerCase()) return true;
+ if(type==="Earrings" && (/earring/i.test(d.name) || c==="Jhumkas")) return true;
+ if(type==="Jhumkas" && (/jhumka/i.test(d.name) || c==="Earrings")) return true;
+ return false;
+}
+
 function chips(el,vals,key){const sl=el.scrollLeft;el.innerHTML=vals.map(v=>`<button class="chip" aria-pressed="${st[key]===v}" data-v="${esc(v)}">${esc(v)}</button>`).join("");
  el.scrollLeft=sl;
  el.querySelectorAll("button").forEach(b=>b.onclick=()=>{st[key]=b.dataset.v;st.page=1;render()})}
 function render(from=0){
  chips($("#metal"),["All","Gold","Silver"],"metal");
- const inM=rows.filter(d=>st.metal==="All"||d.metal===st.metal);
- const types=["All",...new Set(inM.map(d=>d.category))];
- if(!types.includes(st.type))st.type="All";
+ const inM=rows.filter(d=>st.metal==="All"||(d.metal&&d.metal.toLowerCase()===st.metal.toLowerCase()));
+ const types=[...new Set(["All",...ALL_CATS.slice(1),...rows.map(d=>d.category).filter(Boolean)])];
  chips($("#type"),types,"type");
  const nb=document.createElement("button");nb.className="chip new";nb.textContent="New";nb.setAttribute("aria-pressed",st.onlyNew);
  nb.onclick=()=>{st.onlyNew=!st.onlyNew;st.page=1;render()};$("#type").prepend(nb);
  const q=st.q.trim().toLowerCase();
- const list=inM.filter(d=>(st.type==="All"||d.category===st.type)&&(!st.onlyNew||isNew(d))&&(!q||String(d.name??"").toLowerCase().includes(q)||String(d.code??"").toLowerCase().includes(q)));
+ const list=inM.filter(d=>matchCat(d,st.type)&&(!st.onlyNew||isNew(d))&&(!q||String(d.name??"").toLowerCase().includes(q)||String(d.code??"").toLowerCase().includes(q)));
  const part=list.slice(0,st.page*PAGE);
  $("#count").textContent=list.length+(list.length===1?" design":" designs");
- $("#grid").innerHTML=list.length?part.map((d,i)=>`<article class="card${i<from?" still":""}" data-c="${esc(d.code)}" style="--i:${Math.max(0,Math.min(i-from,11))}"><div class="ph"><button class="hit" aria-label="View ${esc(d.name)}"></button>${isNew(d)?'<span class="badge">New</span>':''}<img src="${img(d.image_path)}" alt="${esc(d.name)}" loading="lazy" decoding="async" onload="this.classList.add('in')" onerror="this.classList.add('in')"><span class="view">View details</span><a class="qwa" href="${wa(mk(d,""))}" target="_blank" rel="noopener" aria-label="Quick enquiry on WhatsApp for ${esc(d.name)}">WhatsApp</a></div><div class="info"><h3>${esc(d.name)}</h3><p>${[d.est_weight&&"Approx. "+esc(d.est_weight),d.purity&&esc(d.purity)].filter(Boolean).join(" · ")||esc(d.category)}</p></div></article>`).join(""):'<p class="empty">No designs here yet. Please check another category.</p>';
+ $("#grid").innerHTML=list.length?part.map((d,i)=>{
+  const cat=getCat(d);
+  return `<article class="card${i<from?" still":""}" data-c="${esc(d.code)}" style="--i:${Math.max(0,Math.min(i-from,11))}"><div class="ph"><button class="hit" aria-label="View ${esc(d.name)}"></button>${isNew(d)?'<span class="badge">New</span>':''}<img src="${img(d.image_path)}" alt="${esc(d.name)}" loading="lazy" decoding="async" onload="this.classList.add('in')" onerror="this.classList.add('in')"><span class="view">View details</span><a class="qwa" href="${wa(mk(d,""))}" target="_blank" rel="noopener" aria-label="Quick enquiry on WhatsApp for ${esc(d.name)}">WhatsApp</a></div><div class="info"><h3>${esc(d.name)}</h3><p>${[d.est_weight&&"Approx. "+esc(d.est_weight),d.purity&&esc(d.purity)].filter(Boolean).join(" · ")||esc(cat)}</p></div></article>`;
+ }).join(""):'<p class="empty">No designs here yet. Please check another category.</p>';
  $("#grid").querySelectorAll("img").forEach(i=>{if(i.complete)i.classList.add("in")});
  $("#more").hidden=part.length>=list.length;
 }
@@ -258,9 +287,10 @@ $("#more").onclick=()=>{const f=st.page*PAGE;st.page++;render(f)};
 $("#q").oninput=e=>{st.q=e.target.value;st.page=1;render()};
 
 function openD(d){cur=d;
+ const cat=getCat(d);
  $("#dph").innerHTML=`<img src="${img(d.image_path)}" alt="${esc(d.name)}">`;
  $("#dn").textContent=d.name;
- $("#df").innerHTML=[`Code ${d.code}`,d.metal,d.category,d.purity,d.est_weight&&`Approx. ${d.est_weight}`,d.length&&`Length ${d.length}`].filter(Boolean).map(x=>`<li>${esc(x)}</li>`).join("");
+ $("#df").innerHTML=[`Code ${d.code}`,d.metal,cat,d.purity,d.est_weight&&`Approx. ${d.est_weight}`,d.length&&`Length ${d.length}`].filter(Boolean).map(x=>`<li>${esc(x)}</li>`).join("");
  $("#dnote").textContent=d.note||"";
  $("#msg").value="";upd();$("#dlg").showModal();history.replaceState(null,"","#"+encodeURIComponent(d.code))}
 function mk(d,x){
